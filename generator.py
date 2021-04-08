@@ -5,6 +5,17 @@ import os
 import sys
 import jinja2
 
+# TODO get jinja to add opts.SRCDIR as a director full of templates (see FileSystemLoader in jinja2 documenation)
+# TODO create an abstract base class (see python abc class documentation) for validating, outside of this file
+# TODO create a YAML validating class that inherits the baseclass, so that we can validate the generated yaml is compliant
+#      you will need to add pyyaml to poetry 
+# TODO add a command line argument to specify the generator (i.e yaml) so that running this can validate
+#      prior to writing the file. if it fails to validate, exit 1
+# TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
+# TODO add unit tests (see python unittest library) for the generator class
+# TODO read variables from a file specified in opts (i.e load a specific yaml file full of variables), 
+#      use those variables in the jinja render context
+
 
 if __name__ == "__main__":
     
@@ -15,7 +26,9 @@ if __name__ == "__main__":
     p.add_option("-x", "--debug", dest="DEBUG", action="store_true", help="Set, to print to the console only.")
     opts, args = p.parse_args()
 
-    print(opts)
+    if opts.DEBUG:
+        print(opts)
+
     if opts.TEMPLATE is None or not os.path.isfile(opts.TEMPLATE):
         sys.stderr.write("Invalid template file.\n")
         sys.exit(3)
