@@ -10,8 +10,7 @@ import validators
 
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
 # TODO add unit tests (see python unittest library) for the generator class
-# TODO read variables from a file specified in opts (i.e load a specific yaml file full of variables), 
-#      use those variables in the jinja render context
+
 
 ### ------ DONE 
 # get jinja to add opts.SRCDIR as a director full of templates (see FileSystemLoader in jinja2 documenation)
@@ -20,13 +19,14 @@ import validators
 #      prior to writing the file. if it fails to validate, exit 1
 # create a YAML validating class that inherits the baseclass, so that we can validate the generated yaml is compliant
 #      you will need to add pyyaml to poetry 
-
+# read variables from a file specified in opts (i.e load a specific yaml file full of variables), 
+#      use those variables in the jinja render context
 
 if __name__ == "__main__":
     
     p = OptionParser()
     p.add_option("-s", "--src", dest="SRCDIR", help="Directory containing jinja templates")
-    p.add_option("-t", "--template", dest="TEMPLATE", help="Source Template to be generated")
+    p.add_option("-t", "--template", dest="TEMPLATE", help="[REQUIRED] Source Template to be generated")
     p.add_option("-d", "--dest", dest="DEST", help="Insert the destination for each file you want to parse")
     p.add_option("-x", "--debug", dest="DEBUG", action="store_true", help="Set, to print to the console only.")
     p.add_option("-c", "--validator", dest="VALIDATOR", help="The validator to run.")
@@ -73,8 +73,8 @@ if __name__ == "__main__":
         valid = v.validate(opts.VALIDATOR, content)
 
     if not valid:
-        sys.stderr.write("Sometring went wrong. The content is not valid.\nTo see the content run in debug mode.")
-        if opts.DEBIG:
+        sys.stderr.write("Sometring went wrong. The content is not valid.\nTo see the content run in debug mode (-x).")
+        if opts.DEBUG:
             sys.stderr.write("Content: %s \n" % (content))
         sys.exit(1)
     
