@@ -8,18 +8,18 @@ import jinja2
 import validators
 
 
-# TODO get jinja to add opts.SRCDIR as a director full of templates (see FileSystemLoader in jinja2 documenation)
-# TODO create a YAML validating class that inherits the baseclass, so that we can validate the generated yaml is compliant
-#      you will need to add pyyaml to poetry 
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
 # TODO add unit tests (see python unittest library) for the generator class
 # TODO read variables from a file specified in opts (i.e load a specific yaml file full of variables), 
 #      use those variables in the jinja render context
 
 ### ------ DONE 
+# get jinja to add opts.SRCDIR as a director full of templates (see FileSystemLoader in jinja2 documenation)
 # create an abstract base class (see python abc class documentation) for validating, outside of this file
 # add a command line argument to specify the generator (i.e yaml) so that running this can validate
 #      prior to writing the file. if it fails to validate, exit 1
+# create a YAML validating class that inherits the baseclass, so that we can validate the generated yaml is compliant
+#      you will need to add pyyaml to poetry 
 
 
 if __name__ == "__main__":
@@ -48,12 +48,13 @@ if __name__ == "__main__":
         sys.exit(1)
 
 
-    d = {'hello': "world"}
+    d = {} #'template_dir': os.path.abspath(opts.SRCDIR)}
     # with open(opts.TEMPLATE, "r") as fp:
     #     tmpl = fp.read()
 
     searchpath = os.path.dirname(os.path.abspath(opts.TEMPLATE))
-    templateLoader = jinja2.FileSystemLoader(searchpath=searchpath)
+    # templateLoader = jinja2.FileSystemLoader([searchpath, searchpath=searchpath)
+    templateLoader = jinja2.FileSystemLoader([searchpath, os.path.abspath(opts.SRCDIR)])
     templateEnv = jinja2.Environment(loader=templateLoader)
     tmpl = templateLoader.load(name=opts.TEMPLATE, environment=templateEnv)
     content = tmpl.render(d)
