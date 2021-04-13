@@ -27,9 +27,10 @@ if __name__ == "__main__":
     p = OptionParser()
     p.add_option("-s", "--src", dest="SRCDIR", help="Directory containing jinja templates")
     p.add_option("-t", "--template", dest="TEMPLATE", help="Source Template to be generated")
-    p.add_option("-d", "--dest", dest="DEST", help="insert the destination for each file you want to parse")
+    p.add_option("-d", "--dest", dest="DEST", help="Insert the destination for each file you want to parse")
     p.add_option("-x", "--debug", dest="DEBUG", action="store_true", help="Set, to print to the console only.")
-    p.add_option("-v", "--validator", dest="VALIDATOR", help="The validator to run.")
+    p.add_option("-c", "--validator", dest="VALIDATOR", help="The validator to run.")
+    p.add_option("-v", "--variables", dest="VARIABLES", help="Insert additional variables.")
     opts, args = p.parse_args()
 
     if opts.DEBUG:
@@ -43,17 +44,24 @@ if __name__ == "__main__":
         sys.stderr.write("Invalid source directory.\n")
         sys.exit(3)
 
+    if opts.VARIABLES is not None and not os.path.isdir(opts.SRCDIR):
+        sys.stderr.write("Invalid source file for variables.\n")
+        sys.exit(3)
+
     if opts.VALIDATOR is not None and opts.VALIDATOR not in validators.VALIDATORS:
         sys.stderr.write("%s is not one of %s.\n" % (opts.VALIDATOR, validators.VALIDATORS))
         sys.exit(1)
 
 
-    d = {} #'template_dir': os.path.abspath(opts.SRCDIR)}
-    # with open(opts.TEMPLATE, "r") as fp:
-    #     tmpl = fp.read()
+    d = dict()
+    if opts.VARIABLES is not None:
+        with open(opts.VARIABLES) as f: 
+            d = eval(f.read())
+
+    if opts.DEBUG: 
+        print(d)
 
     searchpath = os.path.dirname(os.path.abspath(opts.TEMPLATE))
-    # templateLoader = jinja2.FileSystemLoader([searchpath, searchpath=searchpath)
     templateLoader = jinja2.FileSystemLoader([searchpath, os.path.abspath(opts.SRCDIR)])
     templateEnv = jinja2.Environment(loader=templateLoader)
     tmpl = templateLoader.load(name=opts.TEMPLATE, environment=templateEnv)
@@ -64,10 +72,15 @@ if __name__ == "__main__":
         v = validators.Validator()
         valid = v.validate(opts.VALIDATOR, content)
 
-    if valid:
-        if opts.DEBUG:
-            print(content)
+    if not valid:
+        sys.stderr.write("Sometring went wrong. The content is not valid.\nTo see the content run in debug mode.")
+        if opts.DEBIG:
+            sys.stderr.write("Content: %s \n" % (content))
+        sys.exit(1)
+    
+    if opts.DEBUG:
+        print(content)
 
-        if opts.DEST is not None:
-            with open(opts.DEST, "w") as fp:
-                fp.write(content)
+    if opts.DEST is not None:
+        with open(opts.DEST, "w") as fp:
+            fp.write(content)

@@ -1,4 +1,4 @@
-version: 2.1
+{{version}}
 
 commands:
   abort_for_docs:
@@ -10,7 +10,7 @@ commands:
               echo "Identifies as documents PR, no testing required"
               circleci step halt
             fi
-  {% include "yaml_lib/commands/early_return_for_forked_pull_requests" ignore missing %}
+  {% include "commands/early_return_for_forked_pull_requests" %}
   ci_steps:
     parameters:
       platform:
@@ -186,20 +186,20 @@ jobs:
       - store_artifacts:
           path: ~/workspace/packages/<<parameters.package>>
 
-  {% include "yaml_lib/jobs/release_automation" ignore missing %}
+  {% include "jobs/release_automation"  %}
 
-  {% include "yaml_lib/jobs/nightly_automation" ignore missing %}
+  {% include "jobs/nightly_automation"  %}
 
 
-{% include "yaml_lib/on_any_branch" ignore missing %}
+{% include "on_any_branch"  %}
 
-{% include "yaml_lib/never" ignore missing %}
+{% include "never"  %}
 
-{% include "yaml_lib/on_master" ignore missing %}
+{% include "on_master"  %}
 
-{% include "yaml_lib/on_version_tags" ignore missing %}
+{% include "on_version_tags"  %}
 
-{% include "yaml_lib/on_master_and_version_tags" ignore missing %}
+{% include "on_master_and_version_tags"  %}
 
 workflows:
   version: 2
@@ -249,4 +249,4 @@ workflows:
       - build-macos
       - valgrind
       - nightly-automation:
-          context: common
+          context: common 
