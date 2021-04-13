@@ -4,6 +4,8 @@ from optparse import OptionParser
 import os
 import sys
 import jinja2
+from validators import YamlValidator, Validator
+
 
 # TODO get jinja to add opts.SRCDIR as a director full of templates (see FileSystemLoader in jinja2 documenation)
 # TODO create an abstract base class (see python abc class documentation) for validating, outside of this file
@@ -37,15 +39,28 @@ if __name__ == "__main__":
         sys.stderr.write("Invalid source directory.\n")
         sys.exit(3)
 
-    dict = {'hello': "world"}
+    val = YamlValidator() 
+    taxt = open("templates/yml.").read()       
+    print(val.validate(text))
+
+    '''
+    d = {'hello': "world"}
     with open(opts.TEMPLATE, "r") as fp:
         tmpl = fp.read()
 
-    j2 = jinja2.Template(tmpl)
-    rendered = j2.render(dict)
+    templateLoader = jinja2.FileSystemLoader(searchpath=opts.SRCDIR)
+    templateEnv = jinja2.Environment(loader=templateLoader)
+    with open(opts.TEMPLATE, "r") as fp:
+        TEMPLATE_FILE = fp.read()
+    temp = jinja2.Template(TEMPLATE_FILE)
+    
+    template = templateEnv.get_template(tmpl)
+    outputText = template.render(d)
+
     if opts.DEBUG:
-        print(rendered)
+        print(outputText)
 
     if opts.DEST is not None:
         with open(opts.DEST, "w") as fp:
-            fp.write(rendered)
+            fp.write(outputText)
+    '''
