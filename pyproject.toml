@@ -8,8 +8,10 @@ authors = ["Your Name <you@example.com>"]
 python = "^3.9"
 Jinja2 = "^2.11.3"
 PyYAML = "^5.4.1"
+flake8 = "^3.9.0"
 
 [tool.poetry.dev-dependencies]
+rope = "^0.18.0"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]
