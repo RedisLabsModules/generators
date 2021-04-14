@@ -1,7 +1,7 @@
-from tests import AbstractTest
+import unittest
 
 
-class TestYaml(AbstractTest):
+class TestYaml(unittest.TestCase):
 
     def test_validator(self):
         pass
