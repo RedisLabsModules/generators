@@ -1,6 +1,7 @@
 import unittest
 import sys
-from .. import generator
+sys.path.append("..")
+import generator
 import os
 
 
