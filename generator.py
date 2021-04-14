@@ -37,7 +37,7 @@ class Generator(object):
         '''
 
         if self.OPTS.DEBUG:
-            print(self.OPTS, self.ARGS )
+            print(self.OPTS, self.ARGS)
 
         # Check if the template file was given and that it's a valid file.
         if self.OPTS.TEMPLATE is None or not os.path.isfile(self.OPTS.TEMPLATE):
