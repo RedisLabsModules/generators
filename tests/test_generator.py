@@ -41,7 +41,7 @@ class TestGenerator(unittest.TestCase):
         g.generate(validator="yaml")
 
     def test_varsfile(self):
-        """Validate loading variables from yaml files."""
+        """Validate loading variables from yaml files and from list."""
         g = Generator(template=self.TEMPLATEFILE)
         g.generate(varfile=self.MOCKVARFILE)
         self.assertNotEqual(g.VARS, None)
