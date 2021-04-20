@@ -6,7 +6,6 @@ import validators
 from validators import create_validator
 
 
-# TODO use python type hints for functions and change the function signatures
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
 #    https://circleci.com/docs/2.0/local-cli/#manual-download
 # TODO add to the command line, the ability to pass in variables ex:
@@ -15,10 +14,8 @@ from validators import create_validator
 
 class Generator(object):
 
-    def __init__(self, template, debug=False):
-        """ // SAMPLE REMOVE ME
-        kwargs['TEMPLATE'] - A string containing a path to a template to generate.
-        """
+    def __init__(self, template:str, debug:bool=False):
+        """Init the generator instance with a valid template file"""
         self.TEMPLATE = template
         self.DEBUG = debug
 
@@ -27,12 +24,12 @@ class Generator(object):
             err = "Invalid template file.\n"
             raise AttributeError(err)
 
-    def __read_varfile__(self, fname):
+    def __read_varfile__(self, fname:str):
         """This function generates the variables dictionary if the VARIABLES option was marked."""
         with open(fname) as fp:
             return yaml.load(fp, Loader=yaml.SafeLoader)
 
-    def generate(self, srcpath=None, varfile=None, validator=None, dest=None):
+    def generate(self, srcpath:str=None, varfile:str=None, validator:str=None, dest:str=None) -> str:
         """Generate the content from the template file. If a filename is provided, this will write to disk
         in addition to returning the content."""
         

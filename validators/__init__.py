@@ -7,11 +7,11 @@ VALIDATORS = ['yaml',]
 class BaseValidator(object):
 
     @abc.abstractmethod
-    def is_valid(self, config):
+    def is_valid(self, content):
         raise NotImplementedError("Child classes must implement the validate function.")
 
 
-def create_validator(name):
+def create_validator(name:str) -> BaseValidator:
     """
     """
     if name == "yaml":
