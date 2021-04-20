@@ -45,6 +45,8 @@ class TestGenerator(unittest.TestCase):
         g = Generator(template=self.TEMPLATEFILE)
         g.generate(varfile=self.MOCKVARFILE)
         self.assertNotEqual(g.VARS, None)
+        g.generate(varslist=['avital', 'goof'])
+        self.assertNotEqual(g.VARS, None)
 
         broken = """
 asdsadsadsadsadadAS
@@ -55,7 +57,7 @@ asdsaddsa: asdasdsad: asdasdsa: asdasdas: asdasd
         fp.write(broken)
         fp.close()
         with self.assertRaises(yaml.scanner.ScannerError):
-            g.__read_varfile__(t)
+            g.__read_vars__(t, None)
 
     def test_generate(self):
         """Test generating a generic template"""

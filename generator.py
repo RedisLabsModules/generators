@@ -8,9 +8,6 @@ from validators import create_validator
 
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
 #    https://circleci.com/docs/2.0/local-cli/#manual-download
-# TODO add to the command line, the ability to pass in variables ex:
-#  python generator.py <-- whatever we use> -var FOO=bar -var something=12345
-#     FEEL FREE TO CHANGE THIS SYNTAX TO ANYTHING THAT IS EASY TO PROGRAM
 
 class Generator(object):
 
@@ -24,12 +21,26 @@ class Generator(object):
             err = "Invalid template file.\n"
             raise AttributeError(err)
 
-    def __read_varfile__(self, fname:str):
+    def __read_vars__(self, fname:str, varslist:list) -> dict:
         """This function generates the variables dictionary if the VARIABLES option was marked."""
-        with open(fname) as fp:
-            return yaml.load(fp, Loader=yaml.SafeLoader)
+        d = {}
+        if varslist is not None:
+            it = iter(varslist)
+            d.update( dict(zip(it, it)))
+        if fname is not None:
+            with open(fname) as fp:
+                temp = yaml.load(fp, Loader=yaml.SafeLoader)
+                if temp is None:
+                    err = "Can't parse empty file to veriables.\n"
+                    raise AttributeError(err)
+                d.update(temp)
 
-    def generate(self, srcpath:str=None, varfile:str=None, validator:str=None, dest:str=None) -> str:
+        if self.DEBUG:
+            print(d)
+
+        return d
+
+    def generate(self, srcpath:str=None, varfile:str=None, validator:str=None, dest:str=None, varslist:list=None) -> str:
         """Generate the content from the template file. If a filename is provided, this will write to disk
         in addition to returning the content."""
         
@@ -49,14 +60,8 @@ class Generator(object):
             raise AttributeError(err)
 
         # If the variables file was given - read it's content
-        self.VARS = {}
-        if varfile is not None:
-            self.VARS = self.__read_varfile__(varfile)
-            if self.VARS is None:
-                err = "You can't give an empty file as a variable file.\n"
-                raise AttributeError(err)
-            if self.DEBUG:
-                print(self.VARS)
+        self.VARS = self.__read_vars__(varfile, varslist)
+
 
         # Render the template
         searchpath = [os.path.abspath(os.path.dirname(self.TEMPLATE)), ]
@@ -97,4 +102,4 @@ if __name__ == "__main__":
     opts, args = p.parse_args()
 
     g = Generator(opts.TEMPLATE, opts.DEBUG)
-    g.generate(opts.SRCDIR, opts.VARIABLES, opts.VALIDATOR, opts.DEST)
+    g.generate(opts.SRCDIR, opts.VARIABLES, opts.VALIDATOR, opts.DEST, args)
