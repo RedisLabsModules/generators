@@ -1,0 +1,8 @@
+on-integ-branch: &on-integ-branch
+  filters:
+    branches:
+      only:
+        - master
+        - /^\d+\.\d+.*$/
+    tags:
+      ignore: /.*/
