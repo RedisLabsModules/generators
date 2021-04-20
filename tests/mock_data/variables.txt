@@ -1,5 +1,0 @@
-{ 
-    'version': '2.3', 
-    'Autor': 'Avi Cohen', 
-    'x': '1'
-}
