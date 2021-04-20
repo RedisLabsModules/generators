@@ -5,11 +5,12 @@ import jinja2
 from validators import create_validator
 
 
-# TODO generator function should do the variable validation
 # TODO Generator.__init__ requires a template file, nothing else
+# TODO generate function should get the variables (yaml) as well
 # TODO use python type hints for functions and change the function signatures
 # TODO update the tests based on these changes (remove mockopts, etc)
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
+#    https://circleci.com/docs/2.0/local-cli/#manual-download
 # TODO add to the command line, the ability to pass in variables ex:
 #  python generator.py <-- whatever we use> -var FOO=bar -var something=12345
 #     FEEL FREE TO CHANGE THIS SYNTAX TO ANYTHING THAT IS EASY TO PROGRAM
