@@ -1,11 +1,11 @@
-from validators import Validator
+from validators import BaseValidator
 import yaml
 
-class YamlValidator(Validator):
+class YamlValidator(BaseValidator):
     
-    def _validate(self, content):
+    def is_valid(self, content):
         try:
             y = yaml.load(content, Loader=yaml.CLoader)
-        except AttributeError:
+        except yaml.scanner.ScannerError:
             return False
         return True

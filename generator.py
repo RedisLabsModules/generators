@@ -2,13 +2,17 @@ import os
 import yaml
 import sys
 import jinja2
-import validators
+from validators import create_validator
 
 
+# TODO generator function should do the variable validation
+# TODO Generator.__init__ requires a template file, nothing else
+# TODO use python type hints for functions and change the function signatures
+# TODO update the tests based on these changes (remove mockopts, etc)
 # TODO add a custom validator to run the circle validation tool (there is one), inheriting from the same base class
-# TODO add unit tests (see python unittest library) for the generator class
-# TODO Generator class should accept **kwargs, and document the items in the dictionary
-# -
+# TODO add to the command line, the ability to pass in variables ex:
+#  python generator.py <-- whatever we use> -var FOO=bar -var something=12345
+#     FEEL FREE TO CHANGE THIS SYNTAX TO ANYTHING THAT IS EASY TO PROGRAM
 
 class Generator(object):
 
@@ -54,7 +58,7 @@ class Generator(object):
         with open(fname) as fp:
             return yaml.load(fp, Loader=yaml.SafeLoader)
 
-    def generate(self, fname=None):
+    def generate(self, searchpath=None, validator=None, dest=None):
         '''
         Generate our content from a template file. If a filename is provided, this will write to disk
         in addition to returning the content.
@@ -68,26 +72,16 @@ class Generator(object):
         tmpl = templateLoader.load(name=os.path.basename(self.OPTS.TEMPLATE), environment=templateEnv)
         content = tmpl.render(self.VARS)
 
-        if fname is not None:
-            with open(fname, "w+") as fp:
+        if validator is not None:
+            v = create_validator(validator)
+            # v = validators.Validator()
+            v.is_valid(content)
+
+        if dest is not None:
+            with open(dest, "w+") as fp:
                 fp.write(content)
 
         return content
-
-    # def __validate__(self, content):
-    #     is_valid = True
-
-    #     if self.OPTS.VALIDATOR is not None:
-    #         v = validators.Validator()
-    #         is_valid =  v.validate(self.OPTS.VALIDATOR, content)
-
-    #     if not is_valid:
-    #         sys.stderr.write("Sometring went wrong. The content is not valid.\nTo see the content run in debug mode (-x).")
-    #         if self.OPTS.DEBUG:
-    #             sys.stderr.write("Content: %s \n" % (self.CONTENT))
-    #         sys.exit(1)
-
-    #     return is_valid
 
 
 if __name__ == "__main__":

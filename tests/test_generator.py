@@ -5,8 +5,6 @@ import sys
 import os
 sys.path.append("..")
 from generator import Generator
-from io import StringIO
-# from mock_opts import Opts
 
 class mockopts:
 
@@ -21,7 +19,7 @@ class mockopts:
         for key, val in kwargs.items():
             setattr(self, key.upper(), val)
 
-class TestGeneral(unittest.TestCase):
+class TestGenerator(unittest.TestCase):
 
     # TEMPLATE = "foo.yaml"
 

@@ -1,19 +1,22 @@
-from abc import abstractmethod
+import abc
 
 
 VALIDATORS = ['yaml',]
 
 
-class Validator(object):
+class BaseValidator(object):
 
-    def validate(self, name, content):
-        if name == "yaml":
-            from .yaml_validator import YamlValidator
-            yv = YamlValidator()
-            return yv._validate(content)
-
-        return False
-
-    @abstractmethod
-    def _validate(self, config):
+    @abc.abstractmethod
+    def is_valid(self, config):
         raise NotImplementedError("Child classes must implement the validate function.")
+
+
+def create_validator(name):
+    """
+    """
+    if name == "yaml":
+        from .yaml_validator import YamlValidator
+        yv = YamlValidator()
+        return yv
+
+    raise AttributeError("Validator must be one of: %s" %  ', '.join(VALIDATORS))
