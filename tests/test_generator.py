@@ -6,66 +6,44 @@ import os
 sys.path.append("..")
 from generator import Generator
 
-class mockopts:
-
-    def __init__(self, **kwargs):
-        
-        self.SRCDIR = None
-        self.TEMPLATE = None
-        self.DEST = None
-        self.DEBUG = None
-        self.VALIDATOR = None
-        self.VARIABLES = None
-        for key, val in kwargs.items():
-            setattr(self, key.upper(), val)
 
 class TestGenerator(unittest.TestCase):
 
-    # TEMPLATE = "foo.yaml"
 
-    MOCKDATAFILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "sample", "sample_vars.yml"))
+    MOCKVARFILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "sample", "sample_vars.yml"))
     TEMPLATEFILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "sample", "template.j2"))
 
     def test_input_validation(self):
         """Test input validation"""
 
+        # validate it fails with no template
         with self.assertRaises(AttributeError):
             g = Generator(None)
 
-        # validate it fails with no valid options  (template)
-        with self.assertRaises(AttributeError):
-            opts = mockopts()
-            g = Generator(opts)
-
+        g = Generator(template=self.TEMPLATEFILE)
+        
         # validate it succeeds with a source directory that exists or no source directory
         with self.assertRaises(AttributeError):
-            opts = mockopts(TEMPLATE="/etc/profile", SRCDIR="/etc555")
-            g = Generator(opts)
+            g.generate(srcpath="/etc555")
 
-        # valid directory
-        opts = mockopts(TEMPLATE="/etc/profile", SRCDIR="/etc")
-        g = Generator(opts)
+        g.generate(srcpath="/etc")
 
         # validate vars file
         with self.assertRaises(AttributeError):
-            opts = mockopts(TEMPLATE="/etc/profile", VARIABLES="/asdasdasdasdsadsa")
-            g = Generator(opts)
+            g.generate(varfile="/asdasdasdasdsadsa")
 
-        opts = mockopts(TEMPLATE="/etc/profile", VARIABLES=self.MOCKDATAFILE)
-        g = Generator(opts)
+        g.generate(varfile=self.MOCKVARFILE)
 
         # validate validator is a real validator
         with self.assertRaises(AttributeError):
-            opts = mockopts(TEMPLATE="/etc/profile", validator="shooboomafoo")
-            g = Generator(opts)
+            g.generate(validator="shooboomafoo")
 
-        opts = mockopts(TEMPLATE="/etc/profile", validator="yaml")
-        g = Generator(opts)
+        g.generate(validator="yaml")
 
     def test_varsfile(self):
         """Validate loading variables from yaml files."""
-        opts = mockopts(TEMPLATE="/etc/profile", VARIABLES=self.MOCKDATAFILE)
-        g = Generator(opts)
+        g = Generator(template=self.TEMPLATEFILE)
+        g.generate(varfile=self.MOCKVARFILE)
         self.assertNotEqual(g.VARS, None)
 
         broken = """
@@ -83,17 +61,17 @@ asdsaddsa: asdasdsad: asdasdsa: asdasdas: asdasd
         """Test generating a generic template"""
 
         # standard case, no includes
-        opts = mockopts(TEMPLATE=self.TEMPLATEFILE, VARIABLES=self.MOCKDATAFILE, SRCDIR="/etc")
-        g = Generator(opts)
-        result = g.generate().strip()
+        g = Generator(template=self.TEMPLATEFILE)
+        result = g.generate(varfile=self.MOCKVARFILE).strip()
         expected = """
 version: 2.3
 author: Avi Cohen
 """.strip()
         self.assertEqual(result, expected)
 
+        # test writing to destination file
         t = tempfile.mktemp()
-        g.generate(t)
+        g.generate(varfile=self.MOCKVARFILE, srcpath="/etc", dest=t)
         with open(t) as fp:
             content = fp.read().strip()
             self.assertEqual(content, expected)
