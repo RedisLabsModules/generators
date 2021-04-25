@@ -12,6 +12,7 @@ class CliValidator(BaseValidator):
 
         try:
             ex = os.system('circleci config validate %s' % abspath)
-            print(ex)
             return ex == 0
-        except OSError:circleci update
+        except OSError:
+            return False
+        return False
