@@ -5,14 +5,15 @@ VALIDATORS = ['yaml', 'cli', ]
 
 
 class BaseValidator(metaclass=abc.ABCMeta):
-
+    """An absract base class for validators."""
+    
     def is_valid(self, content):
-        raise NotImplementedError("Child classes must implement the validate function.")
+        raise NotImplementedError("Child classes must implement the is_valid function.")
 
 
 def create_validator(name:str) -> BaseValidator:
-    """
-    """
+    """A function that returns the corresponding BaseValidator instance (factory)."""
+    
     if name == "yaml":
         from .yaml_validator import YamlValidator
         yv = YamlValidator()
