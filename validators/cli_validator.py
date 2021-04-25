@@ -1,5 +1,6 @@
 from validators import BaseValidator
 import tempfile
+import subprocess
 import os
 
 class CliValidator(BaseValidator):
@@ -12,8 +13,8 @@ class CliValidator(BaseValidator):
             f.write(content)
 
         try:
-            ex = os.system('circleci config validate %s' % abspath)
+            ex = subprocess.run('circleci config validate %s' % abspath, shell=True, check=True)
             return ex == 0
-        except OSError:
+        except subprocess.CalledProcessError:
             return False
         return False
