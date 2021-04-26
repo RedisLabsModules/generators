@@ -40,14 +40,14 @@ workflows:
           requires:
             - build"""
 
-        c = create_validator("cli")
+        c = create_validator("circleci")
         self.assertTrue(c.is_valid(result))
 
         broken = """
 asdsadsadsadsadadAS
 asdsaddsa: asdasdsad: asdasdsa: asdasd
 """
-        c = create_validator("cli")
+        c = create_validator("circleci")
         self.assertFalse(c.is_valid(broken))
 
 if __name__ == "__main__":
