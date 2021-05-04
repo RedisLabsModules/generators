@@ -1,7 +1,7 @@
 import abc
 
 
-VALIDATORS = ['yaml', 'cli', ]
+VALIDATORS = ['yaml', 'circleci', ]
 
 
 class BaseValidator(metaclass=abc.ABCMeta):
