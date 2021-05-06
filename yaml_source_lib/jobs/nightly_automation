@@ -1,0 +1,10 @@
+nightly-automation:
+  docker:
+    - image: redisfab/rmbuilder:6.0.9-x64-buster
+  steps:
+    - abort_for_docs
+    - early_return_for_forked_pull_requests
+    - checkout
+    - run:
+        name: Run QA Automation
+        command: MODULE_VERSION="$CIRCLE_BRANCH" EMAIL="$QA_EMAIL" VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run

@@ -1,5 +1,6 @@
 version: 2.1
 
+
 commands:
   abort_for_docs:
     steps:
@@ -11,8 +12,18 @@ commands:
               circleci step halt
             fi
 
-{% macro foo() %}{% include "commands/early_return_for_forked_pull_requests"%}{% endmacro %}
-{{foo()|indent(width=2, first=True)}}
+  early_return_for_forked_pull_requests:
+    description: >-
+      If this build is from a fork, stop executing the current job and return success.
+      This is useful to avoid steps that will fail due to missing credentials.
+    steps:
+      - run:
+          name: Early return if this build is from a forked PR
+          command: |
+            if [[ -n "$CIRCLE_PR_NUMBER" ]]; then
+              echo "Nothing to do for forked PRs, so marking this step successful"
+              circleci step halt
+            fi
 
   ci_steps:
     parameters:
@@ -56,8 +67,8 @@ commands:
       - restore_cache:
           keys:
             # when lock file changes, use increasingly general patterns to restore cache
-            - gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
-            - gears-{{'{{ .Branch }}'}}
+            - gears-{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}
+            - gears-{{ .Branch }}
             - gears-
       - run:
           name: build gears
@@ -68,7 +79,7 @@ commands:
       - save_cache:
           paths:
             - /tmp/gears
-          key: gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+          key: gears-{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}
       - run:
           name: Run flow with gears
           no_output_timeout: 30m
@@ -257,8 +268,8 @@ jobs:
       - restore_cache:
           keys:
             # when lock file changes, use increasingly general patterns to restore cache
-            - gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
-            - gears-{{'{{ .Branch }}'}}
+            - gears-{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}
+            - gears-{{ .Branch }}
             - gears-
       - run:
           name: build gears
@@ -269,7 +280,7 @@ jobs:
       - save_cache:
           paths:
             - /tmp/gears
-          key: gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+          key: gears-{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}
       - run:
           name: Test with Gears
           command: |
@@ -307,7 +318,17 @@ jobs:
           name: Run QA Automation
           command: MODULE_VERSION="$CIRCLE_TAG" EMAIL="$QA_EMAIL" VERBOSE=1 TEST=release ./tests/qa/run
 
-  {% include "jobs/nightly_automation" %}
+  nightly-automation:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - abort_for_docs
+      - early_return_for_forked_pull_requests
+      - checkout
+      - run:
+          name: Run QA Automation
+          command: MODULE_VERSION="$CIRCLE_BRANCH" EMAIL="$QA_EMAIL" VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run
+
 
 on-any-branch: &on-any-branch
   filters:
@@ -389,7 +410,7 @@ workflows:
   nightly:
     triggers:
       - schedule:
-          cron: "20 17 * * *"
+          cron: "20 17 * * 0,3"
           <<: *on-master
     jobs:
       - build-macos
