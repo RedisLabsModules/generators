@@ -11,7 +11,8 @@ commands:
               circleci step halt
             fi
 
-  {% include "commands/early_return_for_forked_pull_requests"%}
+{% macro foo() %}{% include "commands/early_return_for_forked_pull_requests"%}{% endmacro %}
+{{foo()|indent(width=2, first=True)}}
 
   ci_steps:
     parameters:
@@ -177,7 +178,7 @@ jobs:
       - ci_steps:
           platform: debian
       - package
-  
+
   performance_ci_automation:
     docker:
       - image: redisfab/rmbuilder:6.0.9-x64-bionic
@@ -193,7 +194,7 @@ jobs:
             make setup
       - run:
           name: Build
-          command: make build 
+          command: make build
       - benchmark-automation
 
   build-macos:
