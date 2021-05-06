@@ -1,3 +1,4 @@
+{% macro foo(x) %}{% include x %}{% endmacro %}
 version: 2.1
 
 commands:
@@ -11,8 +12,7 @@ commands:
               circleci step halt
             fi
 
-{% macro foo() %}{% include "commands/early_return_for_forked_pull_requests"%}{% endmacro %}
-{{foo()|indent(width=2, first=True)}}
+{{foo("commands/early_return_for_forked_pull_requests")|indent(width=2, first=True)}}
 
   ci_steps:
     parameters:
