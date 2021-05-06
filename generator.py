@@ -69,6 +69,8 @@ class Generator(object):
             searchpath.append(os.path.abspath(srcpath))
         templateLoader = jinja2.FileSystemLoader(searchpath)
         templateEnv = jinja2.Environment(loader=templateLoader)
+        #templateEnv.trim_blocks = True
+        #templateEnv.lstrip_blocks = True
         tmpl = templateLoader.load(name=os.path.basename(self.TEMPLATE), environment=templateEnv)
         content = tmpl.render(self.VARS)
         if self.DEBUG:

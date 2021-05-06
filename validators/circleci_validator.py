@@ -16,8 +16,8 @@ class CircleCiValidator(BaseValidator):
         if not os.path.isfile(abspath):
             return False
 
-        cmd = 'circleci config validate %s' % abspath
         try:
+            cmd = 'circleci config validate %s' % abspath
             ex = subprocess.run(cmd, capture_output=True, shell=True)
             sys.stderr.write(cmd + "\n")
             if ex.returncode != 0:
