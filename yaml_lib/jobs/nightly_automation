@@ -1,9 +1,0 @@
-nightly_automation:
-  docker:
-    - image: redisfab/rmbuilder:6.0.9-x64-buster
-  steps:
-    - checkout
-    - setup-automation
-    - run:
-        name: Run QA Automation
-        command: MODULE_VERSION=$CIRCLE_BRANCH VERBOSE=1 TEST=nightly QUICK=1 ./tests/qa/run

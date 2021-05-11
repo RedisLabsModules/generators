@@ -1,0 +1,13 @@
+release-automation:
+  docker:
+    - image: redisfab/rmbuilder:6.0.9-x64-buster
+  steps:
+    - abort_for_docs
+    - early_return_for_forked_pull_requests
+    - checkout
+    - run:
+        name: Checkout submodules
+        command: git submodule update --init --recursive
+    - run:
+        name: Run QA Automation
+        command: MODULE_VERSION="$CIRCLE_TAG" EMAIL="$QA_EMAIL" VERBOSE=1 TEST=release ./tests/qa/run

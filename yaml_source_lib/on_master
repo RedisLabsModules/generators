@@ -2,5 +2,3 @@ on-master: &on-master
   filters:
     branches:
       only: master
-    tags:
-      ignore: /.*/

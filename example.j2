@@ -1,0 +1,355 @@
+version: 2.1
+{% macro insert(x) %}{% include x %}{% endmacro %}
+
+commands:
+  abort_for_docs:
+    steps:
+      - run:
+          name: Avoid tests for docs
+          command: |
+            if [[ $CIRCLE_BRANCH == *_docs ]]; then
+              echo "Identifies as documents PR, no testing required"
+              circleci step halt
+            fi
+
+{{insert("commands/early_return_for_forked_pull_requests")|indent(width=2, first=True)}}
+
+  ci_steps:
+    parameters:
+      platform:
+        type: string
+      getredis_params:
+        type: string
+        default: ""
+      build_params:
+        type: string
+        default: ""
+      test_params:
+        type: string
+        default: ""
+    steps:
+      - abort_for_docs
+      - checkout
+      - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: Install prerequisites
+          command: make setup
+      - run:
+          name: Install Redis
+          command: python3 ./deps/readies/bin/getredis -v 6 --force <<parameters.getredis_params>>
+      - run:
+          name: Build
+          command: make build <<parameters.build_params>> SHOW=1
+      - run:
+          name: Unit Test
+          command: |
+            mkdir -p ~/workspace/tests
+            make unittests TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
+      - run:
+          name: Flow Test
+          no_output_timeout: 30m
+          command: |
+            mkdir -p ~/workspace/tests
+            make test TEST_REPORT_DIR=$HOME/workspace/tests <<parameters.test_params>> SHOW=1
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+            - gears-{{'{{ .Branch }}'}}
+            - gears-
+      - run:
+          name: build gears
+          no_output_timeout: 30m
+          command: |
+            cd tests/flow
+            ./get_gears.sh
+      - save_cache:
+          paths:
+            - /tmp/gears
+          key: gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+      - run:
+          name: Run flow with gears
+          no_output_timeout: 30m
+          command: |
+            GEARS_LOCATION=/tmp/gears/RedisGears/bin/linux-x64-release/redisgears.so make test \
+              TEST_REPORT_DIR=$HOME/workspace/tests  GEARS=1 GEN=0 CLUSTER=1 <<parameters.test_params>> SHOW=1
+
+  package:
+    steps:
+      - abort_for_docs
+      - run:
+          name: Package
+          command: |
+            make pack BRANCH="${CIRCLE_BRANCH//[^A-Za-z0-9._-]/_}" INTO=$HOME/workspace/packages SHOW=1
+      - early_return_for_forked_pull_requests
+      - persist_to_workspace:
+          root: ~/workspace
+          paths:
+            - 'packages/release/*.zip'
+            - 'packages/branch/*.zip'
+      - store_test_results:
+          path: ~/workspace/tests
+
+  deploy:
+    parameters:
+      from:
+        type: string
+    steps:
+      - abort_for_docs
+      - early_return_for_forked_pull_requests
+      - run:
+          name: Deploy to S3
+          command: >-
+            aws s3 cp <<parameters.from>>/ s3://redismodules/$PACKAGE_NAME/ --acl public-read --recursive --exclude "*" --include "*.zip"
+
+  benchmark-automation:
+    parameters:
+      github_actor:
+        type: string
+        default: $CIRCLE_USERNAME
+      module_path:
+        type: string
+        default: ../../bin/redistimeseries.so
+    steps:
+      - run:
+          name: Install remote benchmark tool dependencies
+          command: |
+            mkdir -p /workspace
+            TF_EXE_FILE_NAME=/workspace/terraform ./tests/benchmarks/remote/install_deps.sh
+      - run:
+          name: Install remote benchmark python dependencies
+          command: python3 -m pip install -r ./tests/benchmarks/requirements.txt
+      - run:
+          name: Run CI benchmarks on aws
+          timeout: 60m
+          no_output_timeout: 20m
+          command: |
+              cd ./tests/benchmarks
+              export AWS_ACCESS_KEY_ID=$PERFORMANCE_EC2_ACCESS_KEY
+              export AWS_SECRET_ACCESS_KEY=$PERFORMANCE_EC2_SECRET_KEY
+              export AWS_DEFAULT_REGION=$PERFORMANCE_EC2_REGION
+              export EC2_PRIVATE_PEM=$PERFORMANCE_EC2_PRIVATE_PEM
+
+              redisbench-admin run-remote \
+                --terraform_bin_path /workspace/terraform \
+                --module_path << parameters.module_path >> \
+                --github_actor << parameters.github_actor >> \
+                --github_repo $CIRCLE_PROJECT_REPONAME \
+                --github_org $CIRCLE_PROJECT_USERNAME \
+                --github_sha $CIRCLE_SHA1 \
+                --github_branch $CIRCLE_BRANCH \
+                --upload_results_s3 \
+                --triggering_env circleci \
+                --push_results_redistimeseries
+
+jobs:
+  valgrind:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    resource_class: xlarge
+    steps:
+      - ci_steps:
+          platform: debian
+          build_params: VALGRIND=1 -j
+          test_params: VALGRIND=1 SIMPLE=1
+          getredis_params: --valgrind
+
+  lint:
+    docker:
+      - image: redislabsmodules/llvm-toolset:latest
+    steps:
+      - abort_for_docs
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: lint
+          command: |
+            make setup
+            make -C src lint
+
+  build:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - ci_steps:
+          platform: debian
+      - package
+
+  performance_ci_automation:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-bionic
+    steps:
+      - early_return_for_forked_pull_requests
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: Setup
+          command: |
+            make setup
+      - run:
+          name: Build
+          command: make build
+      - benchmark-automation
+
+  build-macos:
+    macos:
+      xcode: 11.3.0
+    steps:
+      - run:
+          name: Set up workspace
+          command: |
+            sudo mkdir -p ~/workspace
+            sudo chown $USER ~/workspace
+      - ci_steps:
+          platform: macos
+
+  build-multiarch-docker:
+    machine:
+      enabled: true
+      image: ubuntu-1604:202010-01
+    steps:
+      - abort_for_docs
+      - checkout
+      - run:
+          name: Checkout submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: Set up Python3
+          command: pyenv global 3.7.0
+      - run:
+          name: Setup Docker client experimental features
+          command: |
+            sudo ./deps/readies/bin/getdocker --just-enable-exp
+            docker version
+      - run:
+          name: Build
+          command: |
+            sudo docker login -u redisfab -p $DOCKER_REDISFAB_PWD
+            make -C build/docker build
+            sudo make -C build/docker publish
+          no_output_timeout: 20m
+
+  coverage:
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - abort_for_docs
+      - checkout
+      - run:
+          name: Pull Submodules
+          command: git submodule update --init --recursive
+      - run:
+          name: Build & Test
+          command: |
+            make setup
+            make build COV=1 SHOW=1
+            make test COV=1
+            bash <(curl -s https://codecov.io/bash) -f bin/linux-x64-debug-cov/cov.info
+      - store_artifacts:
+          path: coverage
+          destination: coverage
+      - restore_cache:
+          keys:
+            # when lock file changes, use increasingly general patterns to restore cache
+            - gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+            - gears-{{'{{ .Branch }}'}}
+            - gears-
+      - run:
+          name: build gears
+          no_output_timeout: 30m
+          command: |
+            cd tests/flow
+            ./get_gears.sh
+      - save_cache:
+          paths:
+            - /tmp/gears
+          key: gears-{{'{{ .Branch }}-{{ checksum "tests/flow/get_gears.sh" }}'}}
+      - run:
+          name: Test with Gears
+          command: |
+            GEARS_LOCATION=/tmp/gears/RedisGears/bin/linux-x64-release/redisgears.so make test \
+              COV=1 GEARS=1 CLUSTER=1 SHOW=1
+            bash <(curl -s https://codecov.io/bash) -f bin/linux-x64-debug-cov/cov.info
+
+  deploy_package:
+    parameters:
+      package:
+        type: string
+    docker:
+      - image: redisfab/rmbuilder:6.0.9-x64-buster
+    steps:
+      - abort_for_docs
+      - early_return_for_forked_pull_requests
+      - attach_workspace:
+          at: ~/workspace
+      - deploy:
+          from: ~/workspace/packages/<<parameters.package>>
+      - store_artifacts:
+          path: ~/workspace/packages/<<parameters.package>>
+
+{{insert("jobs/release_automation")|indent(width=2, first=True)}}
+
+{{insert("jobs/nightly_automation")|indent(width=2, first=True)}}
+
+
+{{insert("on_any_branch")}}
+
+{{insert("never")}}
+
+{{insert("on_master")}}
+
+{{insert("on_version_tags")}}
+
+{{insert("on_master_and_version_tags")}}
+
+
+workflows:
+  version: 2
+  build_and_package:
+    jobs:
+      - lint:
+          <<: *on-any-branch
+      - valgrind:
+          <<: *on-any-branch
+      - build:
+          <<: *on-any-branch
+      - performance_ci_automation:
+          context: common
+          <<: *on-any-branch
+      - build-macos:
+          <<: *on-version-tags
+      - build-multiarch-docker:
+          <<: *on-version-tags
+      - coverage:
+          context: common
+          <<: *on-any-branch
+      - deploy_package:
+          name: deploy_branch
+          package: branch
+          context: common
+          requires:
+            - build
+            - valgrind
+          <<: *on-master
+      - deploy_package:
+          name: deploy_release
+          package: release
+          context: common
+          requires:
+            - build
+            - valgrind
+          <<: *on-version-tags
+      - release-automation:
+          context: common
+          requires:
+            - deploy_release
+          <<: *on-version-tags
+
+{{insert("workflows/nightly")|indent(width=2, first=True)}}
+

@@ -1,4 +1,5 @@
 from validators import BaseValidator
+import sys
 import tempfile
 import subprocess
 import os
@@ -15,10 +16,13 @@ class CircleCiValidator(BaseValidator):
         if not os.path.isfile(abspath):
             return False
 
-        cmd = 'circleci config validate %s' % abspath
         try:
-            ex = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-            ex.check_returncode()
+            cmd = 'circleci config validate %s' % abspath
+            ex = subprocess.run(cmd, capture_output=True, shell=True)
+            sys.stderr.write(cmd + "\n")
+            if ex.returncode != 0:
+                sys.stderr.write(ex.stderr.decode('utf-8'))
+                return False
             return True
         except subprocess.CalledProcessError:
             os.unlink(abspath)
